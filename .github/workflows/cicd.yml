@@ -18,13 +18,13 @@ jobs:
 
       - name: Load image into Minikube
         run: |
-          docker tag devops-virtual-lab:${{ github.sha }} devops-virtual-lab:latest
-          minikube image load devops-virtual-lab:latest
+          minikube image load devops-virtual-lab:${{ github.sha }}
 
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/deployment.yml
           kubectl apply -f k8s/service.yml
+          kubectl set image deployment/devops-app devops-container=devops-virtual-lab:${{ github.sha }}
           kubectl rollout status deployment/devops-app --timeout=120s
 
       - name: Verify deployment
