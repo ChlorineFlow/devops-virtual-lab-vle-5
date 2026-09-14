@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-deploy:
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -16,7 +16,18 @@ jobs:
       - name: Build Docker image
         run: docker build -t devops-virtual-lab:${{ github.sha }} ./app
 
-      - name: Validate Kubernetes manifests
+      - name: Load image into Minikube
         run: |
-          grep -q "kind: Deployment" k8s/deployment.yml
-          grep -q "kind: Service" k8s/service.yml
+          docker tag devops-virtual-lab:${{ github.sha }} devops-virtual-lab:latest
+          minikube image load devops-virtual-lab:latest
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/deployment.yml
+          kubectl apply -f k8s/service.yml
+          kubectl rollout status deployment/devops-app --timeout=120s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods
+          kubectl get service devops-service
